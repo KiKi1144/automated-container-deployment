@@ -20,9 +20,23 @@ jobs:
           username: ${{ secrets.EC2_USERID }}
           key: ${{ secrets.EC2_KEY }}
           script: |
+            set -e
+
+            echo "Navigating to project directory..."
             cd ~/DockerProject
-            git pull origin main || true
-            sudo docker build -t myapp .
+
+            echo "Updating latest code..."
+            git reset --hard
+            git pull origin main
+
+            echo "Building Docker image..."
+            sudo docker build -t myapp:latest .
+
+            echo "Stopping old container (if exists)..."
             sudo docker stop myapp || true
+
+            echo "Removing old container (if exists)..."
             sudo docker rm myapp || true
-            sudo docker run -d -p 80:80 myapp
+
+            echo "Starting new container..."
+            sudo docker run -d --name myapp -p 80:80 myapp:latest
