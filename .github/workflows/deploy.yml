@@ -16,8 +16,8 @@ jobs:
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          host: ${{ secrets.EC2_HOSTIP }}
+          username: ${{ secrets.EC2_USERID }}
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd ~/DockerProject
