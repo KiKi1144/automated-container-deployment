@@ -32,11 +32,8 @@ jobs:
             echo "Building Docker image..."
             sudo docker build -t myapp:latest .
 
-            echo "Stopping old container (if exists)..."
-            sudo docker stop myapp || true
-
-            echo "Removing old container (if exists)..."
-            sudo docker rm myapp || true
+            echo "Cleaning old container..."
+            sudo docker rm -f myapp || true
 
             echo "Starting new container..."
             sudo docker run -d --name myapp -p 80:80 myapp:latest
