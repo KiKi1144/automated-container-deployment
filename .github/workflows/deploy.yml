@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline - Docker Deployment
 
 on:
   push:
@@ -13,28 +13,45 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Debug Secrets (remove after testing)
+        run: |
+          echo "Host: ${{ secrets.EC2_HOSTIP != '' && 'SET' || 'MISSING' }}"
+          echo "User: ${{ secrets.EC2_USERID != '' && 'SET' || 'MISSING' }}"
+          echo "Key length: ${{ secrets.EC2_KEY != '' && length(secrets.EC2_KEY) || '0' }}"
+
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOSTIP }}
           username: ${{ secrets.EC2_USERID }}
           key: ${{ secrets.EC2_KEY }}
+          port: 22
+          timeout: 30s
+          command_timeout: 15m
           script: |
             set -e
 
-            echo "Navigating to project directory..."
+            echo "=== SSH Connection Successful ==="
+            whoami
+            pwd
+
+            # Ensure project directory exists
+            mkdir -p ~/DockerProject
             cd ~/DockerProject
 
-            echo "Updating latest code..."
-            git reset --hard
-            git pull origin main
+            echo "=== Updating Code ==="
+            git reset --hard HEAD
+            git pull origin main || echo "Git pull failed - repo may need initial clone"
 
-            echo "Building Docker image..."
+            echo "=== Building Docker Image ==="
             sudo docker build -t myapp:latest .
 
-            echo "Stopping anything using port 80..."
-            sudo docker ps -q --filter "publish=80" | xargs -r sudo docker stop
-            sudo docker ps -aq --filter "publish=80" | xargs -r sudo docker rm
+            echo "=== Cleaning Old Container ==="
+            sudo docker stop myapp || true
+            sudo docker rm myapp || true
 
-            echo "Starting new container..."
+            echo "=== Starting New Container ==="
             sudo docker run -d --name myapp -p 80:80 myapp:latest
+
+            echo "=== Deployment Completed Successfully ==="
+            sudo docker ps
