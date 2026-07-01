@@ -45,7 +45,15 @@ jobs:
             sudo docker rm myapp || true
 
             echo "=== Starting New Container ==="
-            sudo docker run -d --name myapp -p 80:80 myapp:latest --restart unless-stopped
+            sudo docker run -d \
+              --name myapp \
+              -p 80:80 \
+              --restart unless-stopped \
+              myapp:latest
 
             echo "=== Deployment Completed Successfully ==="
             sudo docker ps
+
+            echo "=== Verifying Deployment ==="
+            sleep 5
+            curl -f http://localhost:80 || echo "Warning: App not responding on port 80"
