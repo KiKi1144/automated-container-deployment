@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Run Ansible
+      - name: Deploy & Configure via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOSTIP }}
@@ -25,20 +25,22 @@ jobs:
           script: |
             set -e
 
-            echo "=== Runninh Ansible Configuration ==="
-            cd ~/DockerProject/ansible
+            cd ~/DockerProject
+
+            echo "=== Running Ansible Configuration ==="
+            cd ansible
             ansible-playbook -i inventory.ini playbook.yml --ssh-extra-args='-o StrictHostKeyChecking=no'
 
-            echo ""=== Update code and Deployed App ==='
+            echo "=== Updating Code and Deploying App ==="
             cd ~/DockerProject
             git reset --hard HEAD
             git pull origin main
 
-            echo "=== Build and run Docker Container ==="
-            sudo docker build -t my app:latest .
+            echo "=== Building and Running Container ==="
+            sudo docker build -t myapp:latest .
             sudo docker stop myapp || true
             sudo docker rm myapp || true
-            sudo docker run -d --name myapp 80:80 --restart unless-stopped myapp-latest
+            sudo docker run -d --name myapp -p 80:80 --restart unless-stopped myapp:latest
 
-            echo "=== Deployment Complete ==="
+            echo "=== Deployment Completed ==="
             sudo docker ps
