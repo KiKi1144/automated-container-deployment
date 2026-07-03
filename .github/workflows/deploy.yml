@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Deploy to EC2 via SSH
+      - name: Run Ansible
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOSTIP }}
@@ -25,35 +25,20 @@ jobs:
           script: |
             set -e
 
-            echo "=== SSH Connection Successful ==="
-            whoami
-            pwd
+            echo "=== Runninh Ansible Configuration ==="
+            cd ~/DockerProject/ansible
+            ansible-playbook -i inventory.ini playbook.yml --ssh-extra-args='-o StrictHostKeyChecking=no'
 
-            # Ensure project directory exists
-            mkdir -p ~/DockerProject
+            echo ""=== Update code and Deployed App ==='
             cd ~/DockerProject
-
-            echo "=== Updating Code ==="
             git reset --hard HEAD
-            git pull origin main || echo "Warning: Git pull failed"
+            git pull origin main
 
-            echo "=== Building Docker Image ==="
-            sudo docker build -t myapp:latest .
-
-            echo "=== Cleaning Old Container ==="
+            echo "=== Build and run Docker Container ==="
+            sudo docker build -t my app:latest .
             sudo docker stop myapp || true
             sudo docker rm myapp || true
+            sudo docker run -d --name myapp 80:80 --restart unless-stopped myapp-latest
 
-            echo "=== Starting New Container ==="
-            sudo docker run -d \
-              --name myapp \
-              -p 80:80 \
-              --restart unless-stopped \
-              myapp:latest
-
-            echo "=== Deployment Completed Successfully ==="
+            echo "=== Deployment Complete ==="
             sudo docker ps
-
-            echo "=== Verifying Deployment ==="
-            sleep 5
-            curl -f http://localhost:80 || echo "Warning: App not responding on port 80"
